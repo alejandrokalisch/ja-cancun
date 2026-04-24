@@ -876,7 +876,7 @@ window.conectarAPI = async function() {
     const ts  = Math.floor(Date.now() / 1000);
     const sig = CryptoJS.MD5(CryptoJS.MD5(pass).toString() + ts).toString();
     const url = `https://api.protrack365.com/api/authorization?time=${ts}&account=${encodeURIComponent(user)}&signature=${sig}`;
-    const res = await fetch(url);
+    const res = await fetch(`https://protrack-proxy.alejandro-kalisch.workers.dev/?endpoint=authorization&time=${ts}&account=${encodeURIComponent(user)}&signature=${sig}`);
     const data = await res.json();
     if (data.code !== 0) throw new Error(data.message || 'Error de autenticación');
     apiToken = data.record.access_token;
@@ -911,7 +911,7 @@ window.actualizarTiempoReal = async function() {
   if (!apiToken) return;
   try {
     const imeis = Object.values(IMEIS_MAP).join(',');
-    const res = await fetch(`https://api.protrack365.com/api/track?access_token=${apiToken}&imeis=${imeis}`);
+    const res = await fetch(`https://protrack-proxy.alejandro-kalisch.workers.dev/?endpoint=track?access_token=${apiToken}&imeis=${imeis}`);
     const data = await res.json();
     if (data.code !== 0) throw new Error(data.message);
     document.getElementById('lastUpdate').textContent = '· ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -988,7 +988,7 @@ window.generarReporteAPI = async function() {
     const fin    = Math.floor(new Date(fecha + 'T23:59:59').getTime() / 1000);
     const resultados = [];
     for (const [nombre, imei] of Object.entries(IMEIS_MAP)) {
-      const res = await fetch(`https://api.protrack365.com/api/tripReport?access_token=${apiToken}&imei=${imei}&starttime=${inicio}&endtime=${fin}`);
+      const res = await fetch(`https://protrack-proxy.alejandro-kalisch.workers.dev/?endpoint=tripReport?access_token=${apiToken}&imei=${imei}&starttime=${inicio}&endtime=${fin}`);
       const data = await res.json();
       if (data.code === 0 && data.record) resultados.push({ vehiculo: nombre, imei, trips: data.record, fecha });
     }
