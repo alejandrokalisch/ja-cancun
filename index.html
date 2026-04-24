@@ -1,0 +1,1038 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JA Cancún · Gestión de Flota</title>
+<meta name="description" content="Sistema de gestión de flota de taxis aeropuerto Cancún">
+<meta name="theme-color" content="#1a1a18">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;JA Cancún Flota&quot;,&quot;short_name&quot;:&quot;JA Flota&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#1a1a18&quot;,&quot;theme_color&quot;:&quot;#1a1a18&quot;}">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f0; color: #1a1a18; font-size: 14px; min-height: 100vh; }
+
+/* LOGIN */
+#loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a18; }
+.login-card { background: #fff; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 380px; }
+.login-logo { font-size: 28px; font-weight: 700; color: #1a1a18; margin-bottom: 4px; }
+.login-sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+.login-card label { display: block; font-size: 12px; color: #666; font-weight: 500; margin-bottom: 5px; margin-top: 14px; }
+.login-card input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; outline: none; transition: border .2s; }
+.login-card input:focus { border-color: #1a1a18; }
+.btn-login { width: 100%; background: #1a1a18; color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 22px; transition: opacity .2s; }
+.btn-login:hover { opacity: .85; }
+.login-error { color: #c0392b; font-size: 12px; margin-top: 10px; text-align: center; min-height: 18px; }
+
+/* HEADER */
+#appScreen { display: none; }
+header { background: #1a1a18; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo { font-size: 15px; font-weight: 600; }
+.header-fecha { font-size: 11px; color: #888; }
+.btn-logout { background: transparent; border: 1px solid #444; color: #aaa; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.btn-logout:hover { border-color: #888; color: #fff; }
+
+/* MAIN */
+.main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+
+/* UPLOAD */
+.upload-section { background: #fff; border-radius: 12px; border: 0.5px solid #e0e0d8; padding: 20px; margin-bottom: 16px; }
+.upload-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+.drop-zone { border: 1.5px dashed #ccc; border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color .2s; background: #fafaf8; }
+.drop-zone:hover, .drop-zone.drag { border-color: #1a1a18; background: #f5f5f0; }
+.drop-zone input { display: none; }
+.drop-zone p { color: #666; margin-bottom: 6px; font-size: 13px; }
+.drop-zone small { color: #aaa; font-size: 11px; }
+.btn-sel { background: #1a1a18; color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; cursor: pointer; margin-top: 10px; }
+
+/* VEHICULOS CARGADOS */
+.vehiculos-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.veh-chip { display: flex; align-items: center; gap: 6px; background: #f0f7ff; border: 0.5px solid #b5d4f4; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #185fa5; }
+.veh-chip .rm { cursor: pointer; color: #aaa; margin-left: 4px; font-size: 14px; line-height: 1; }
+.veh-chip .rm:hover { color: #c0392b; }
+
+/* BOTÓN ANALIZAR */
+.btn-analizar { background: #27ae60; color: #fff; border: none; border-radius: 8px; padding: 11px 28px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 14px; transition: opacity .2s; }
+.btn-analizar:disabled { opacity: .4; cursor: not-allowed; }
+.btn-analizar:hover:not(:disabled) { opacity: .88; }
+
+/* ADVERTENCIA VEHICULOS FALTANTES */
+.warn-faltantes { background: #fff8e1; border: 0.5px solid #ffe082; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #856404; margin-top: 10px; }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.kpi { background: #fff; border-radius: 10px; padding: 14px 16px; border: 0.5px solid #e0e0d8; }
+.kpi .lbl { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.kpi .val { font-size: 22px; font-weight: 700; }
+.kpi .sub { font-size: 10px; color: #bbb; margin-top: 2px; }
+.kpi.ok .val { color: #27ae60; }
+.kpi.warn .val { color: #e67e22; }
+.kpi.bad .val { color: #c0392b; }
+.kpi.neu .val { color: #1a1a18; }
+
+/* ALERTAS */
+.alertas { margin-bottom: 14px; }
+.alerta { border-radius: 0 8px 8px 0; padding: 9px 14px; margin-bottom: 7px; font-size: 12px; border-left: 3px solid; }
+.alerta.bad { background: #fff0f0; border-color: #c0392b; }
+.alerta.warn { background: #fff8f0; border-color: #e67e22; }
+.alerta.ok { background: #f0fff4; border-color: #27ae60; }
+.alerta strong { display: block; font-size: 12px; margin-bottom: 2px; }
+
+/* TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.tab { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 7px; padding: 7px 14px; font-size: 12px; cursor: pointer; color: #666; }
+.tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+
+/* TABLA */
+.tbl-wrap { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; overflow-x: auto; margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; min-width: 600px; }
+th { background: #f8f8f5; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #777; padding: 9px 12px; text-align: left; border-bottom: 0.5px solid #e8e8e0; white-space: nowrap; }
+td { padding: 9px 12px; border-bottom: 0.5px solid #f0f0e8; font-size: 12px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafaf8; }
+
+/* BADGES */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.b-aero { background: #e3f2fd; color: #1565c0; }
+.b-viaje { background: #e8f5e9; color: #2e7d32; }
+.b-espera { background: #fff3e0; color: #e65100; }
+.b-ralenti { background: #fce4ec; color: #c62828; }
+.b-normal { background: #f3f4f6; color: #555; }
+
+/* HISTORIAL */
+.hist-list { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; overflow: hidden; }
+.hist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 0.5px solid #f0f0e8; cursor: pointer; transition: background .15s; }
+.hist-item:hover { background: #fafaf8; }
+.hist-item:last-child { border-bottom: none; }
+.hist-fecha { font-weight: 500; font-size: 13px; }
+.hist-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
+.hist-badge { font-size: 11px; color: #888; }
+
+/* FACTURA */
+.factura-box { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; padding: 18px; margin-bottom: 14px; }
+.factura-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.f-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid #f0f0e8; font-size: 12px; }
+.f-row:last-child { border-bottom: none; }
+.f-total { font-weight: 700; font-size: 14px; padding-top: 10px; margin-top: 6px; border-top: 1.5px solid #1a1a18; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 50px 20px; color: #bbb; }
+.empty .ico { font-size: 40px; margin-bottom: 10px; }
+
+/* LOADING */
+.loading { text-align: center; padding: 30px; color: #888; font-size: 13px; }
+
+/* CONFIRM MODAL */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; }
+.modal-bg.show { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 28px; max-width: 420px; width: 90%; }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.modal p { font-size: 13px; color: #555; margin-bottom: 18px; line-height: 1.5; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-cancel { background: #f5f5f0; border: 0.5px solid #ddd; border-radius: 7px; padding: 9px 18px; font-size: 13px; cursor: pointer; }
+.btn-confirm { background: #1a1a18; color: #fff; border: none; border-radius: 7px; padding: 9px 18px; font-size: 13px; cursor: pointer; }
+
+/* USUARIOS FLOTA */
+.flota-config { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; padding: 18px; margin-bottom: 14px; }
+.flota-config h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.veh-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.veh-row input { flex: 1; border: 0.5px solid #ddd; border-radius: 7px; padding: 7px 10px; font-size: 13px; }
+.btn-add-veh { background: transparent; border: 0.5px solid #ddd; border-radius: 7px; padding: 7px 14px; font-size: 12px; cursor: pointer; }
+.btn-save-flota { background: #1a1a18; color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; cursor: pointer; margin-top: 8px; }
+
+@media (max-width: 600px) {
+  .main { padding: 10px; }
+  .login-card { padding: 28px 20px; margin: 16px; }
+  .kpi .val { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">JA Cancún</div>
+    <div class="login-sub">Sistema de gestión de flota · Aeropuerto</div>
+    <label>Correo electrónico</label>
+    <input type="email" id="loginEmail" placeholder="tu@correo.com" autocomplete="email">
+    <label>Contraseña</label>
+    <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <header>
+    <div class="header-left">
+      <div>
+        <div class="header-logo">JA Cancún · Flota</div>
+        <div class="header-fecha" id="headerFecha">Aeropuerto Internacional de Cancún</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+  </header>
+
+  <div class="main">
+
+    <!-- TABS PRINCIPALES -->
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" onclick="showMain('dashboard',this)">Dashboard</div>
+      <div class="tab" onclick="showMain('realtime',this)">⚡ Tiempo real</div>
+      <div class="tab" onclick="showMain('historial',this)">Historial</div>
+      <div class="tab" onclick="showMain('configuracion',this)">Configuración</div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="main-dashboard">
+
+      <!-- Upload -->
+      <div class="upload-section">
+        <h2>Subir reportes del día</h2>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".xls,.xlsx,.html,.htm" multiple>
+          <p>Arrastra aquí los reportes XLS de Protrack365</p>
+          <p>Puedes subir varios vehículos a la vez</p>
+          <small>Un archivo por vehículo · Formato "Reporte de viaje" de Protrack365</small>
+          <br>
+          <button class="btn-sel" onclick="document.getElementById('fileInput').click()">Seleccionar archivos</button>
+        </div>
+        <div class="vehiculos-status" id="vehStatus"></div>
+        <div id="warnFaltantes" style="display:none"></div>
+        <br>
+        <button class="btn-analizar" id="btnAnalizar" disabled onclick="analizarYGuardar()">Analizar y guardar en la nube</button>
+      </div>
+
+      <!-- Resultados -->
+      <div id="resultados" style="display:none">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="alertas" id="alertasBox"></div>
+        <div class="tabs" id="tabsAnalisis">
+          <div class="tab active" onclick="showTab('viajes',this)">Viajes desde aeropuerto</div>
+          <div class="tab" onclick="showTab('espera',this)">Esperas en aeropuerto</div>
+          <div class="tab" onclick="showTab('ralenti',this)">Ralentí improductivo</div>
+          <div class="tab" onclick="showTab('todos',this)">Todos los movimientos</div>
+          <div class="tab" onclick="showTab('factura',this)">Facturación del día</div>
+        </div>
+        <div id="tab-viajes" class="tbl-wrap"></div>
+        <div id="tab-espera" class="tbl-wrap" style="display:none"></div>
+        <div id="tab-ralenti" class="tbl-wrap" style="display:none"></div>
+        <div id="tab-todos" class="tbl-wrap" style="display:none"></div>
+        <div id="tab-factura" style="display:none"></div>
+      </div>
+
+    </div>
+
+    <!-- TIEMPO REAL -->
+    <div id="main-realtime" style="display:none">
+
+      <!-- Credenciales API -->
+      <div class="upload-section" id="apiLoginBox">
+        <h2>Conexión en tiempo real · Protrack365 API</h2>
+        <p style="font-size:12px;color:#888;margin-bottom:14px">Ingresa tus credenciales de Protrack365 para activar el monitoreo en tiempo real. Tu contraseña no se guarda en ningún lado.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Usuario Protrack365</label>
+            <input type="text" id="apiUser" value="alexrk" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:8px 12px;font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Contraseña</label>
+            <input type="password" id="apiPass" placeholder="Tu contraseña de Protrack365" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:8px 12px;font-size:13px">
+          </div>
+        </div>
+        <button class="btn-analizar" onclick="conectarAPI()" style="background:#185fa5">Conectar y ver en tiempo real</button>
+        <div id="apiStatus" style="font-size:12px;margin-top:8px"></div>
+      </div>
+
+      <!-- Panel tiempo real -->
+      <div id="realtimePanel" style="display:none">
+
+        <!-- Barra de estado -->
+        <div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div id="connDot" style="width:8px;height:8px;border-radius:50%;background:#27ae60"></div>
+            <span style="font-size:13px;font-weight:500">Conectado a Protrack365</span>
+            <span id="lastUpdate" style="font-size:11px;color:#aaa"></span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="actualizarTiempoReal()" style="background:transparent;border:0.5px solid #ddd;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">Actualizar ahora</button>
+            <button onclick="toggleAutoUpdate()" id="btnAuto" style="background:#1a1a18;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">Auto: ON</button>
+            <button onclick="desconectarAPI()" style="background:transparent;border:0.5px solid #ddd;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:#c0392b">Desconectar</button>
+          </div>
+        </div>
+
+        <!-- Tarjetas de vehículos -->
+        <div id="vehicleCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px"></div>
+
+        <!-- Alertas tiempo real -->
+        <div id="realtimeAlertas" style="margin-bottom:14px"></div>
+
+        <!-- Botón generar reporte del día -->
+        <div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:16px;margin-bottom:14px">
+          <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Generar reporte del día automáticamente</h3>
+          <p style="font-size:12px;color:#888;margin-bottom:12px">Consulta todos los viajes del día actual directamente desde la API de Protrack365, sin necesidad de descargar ningún archivo.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="fechaReporte" style="border:0.5px solid #ddd;border-radius:7px;padding:7px 12px;font-size:13px">
+            <button class="btn-analizar" onclick="generarReporteAPI()" style="background:#27ae60;margin-top:0">Generar reporte desde API</button>
+          </div>
+          <div id="reporteAPIStatus" style="font-size:12px;margin-top:8px"></div>
+        </div>
+
+      </div>
+    </div>
+    <div id="main-historial" style="display:none">
+      <h2 style="font-size:14px;font-weight:600;margin-bottom:14px">Reportes guardados</h2>
+      <div id="historialLista"><div class="loading">Cargando historial...</div></div>
+    </div>
+
+    <!-- CONFIGURACIÓN -->
+    <div id="main-configuracion" style="display:none">
+
+      <div class="flota-config">
+        <h3>Vehículos registrados en la flota</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:12px">El sistema te avisará si falta algún vehículo al subir reportes del día.</p>
+        <div id="flotaInputs"></div>
+        <button class="btn-add-veh" onclick="addVehInput()">+ Agregar vehículo</button>
+        <br>
+        <button class="btn-save-flota" onclick="guardarFlota()">Guardar flota</button>
+        <div id="flotaMsg" style="font-size:12px;color:#27ae60;margin-top:8px"></div>
+      </div>
+
+      <div class="flota-config">
+        <h3>Parámetros de detección</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+          <div>
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Radio geocerca aeropuerto (km)</label>
+            <input type="number" id="cfgRadio" value="1.5" step="0.1" min="0.3" max="5" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Ralentí mínimo (minutos)</label>
+            <input type="number" id="cfgRalenti" value="10" step="1" min="1" max="60" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Latitud aeropuerto CUN</label>
+            <input type="number" id="cfgLat" value="21.0365" step="0.0001" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Longitud aeropuerto CUN</label>
+            <input type="number" id="cfgLon" value="-86.8771" step="0.0001" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:7px 10px;font-size:13px">
+          </div>
+        </div>
+        <button class="btn-save-flota" onclick="guardarConfig()" style="margin-top:14px">Guardar configuración</button>
+        <div id="cfgMsg" style="font-size:12px;color:#27ae60;margin-top:8px"></div>
+      </div>
+
+      <div class="flota-config">
+        <h3>Agregar usuario al sistema</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:12px">Agrega el correo de tu socio para que pueda acceder.</p>
+        <input type="email" id="nuevoEmail" placeholder="correo@ejemplo.com" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:8px 12px;font-size:13px;margin-bottom:8px">
+        <input type="password" id="nuevoPass" placeholder="Contraseña temporal" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:8px 12px;font-size:13px;margin-bottom:8px">
+        <button class="btn-save-flota" onclick="crearUsuario()">Crear acceso</button>
+        <div id="userMsg" style="font-size:12px;margin-top:8px"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMACIÓN VEHÍCULOS FALTANTES -->
+<div class="modal-bg" id="modalFaltantes">
+  <div class="modal">
+    <h3>Vehículos faltantes</h3>
+    <p id="modalMsg"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal()">Esperar los demás</button>
+      <button class="btn-confirm" onclick="confirmarAnalisis()">Analizar con los que tengo</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, orderBy, query, limit } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCfR6r0qmGpNRhatK10AiaZ8L5RLXgckE4",
+  authDomain: "ja-cancun.firebaseapp.com",
+  projectId: "ja-cancun",
+  storageBucket: "ja-cancun.firebasestorage.app",
+  messagingSenderId: "201191756244",
+  appId: "1:201191756244:web:f9bb5c84b5c76fc1760641"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ─── CONFIG GLOBAL ───────────────────────────────────────────────────────────
+let cfg = { radio: 1.5, ralenti: 10, lat: 21.0365, lon: -86.8771 };
+let flotaRegistrada = [];
+let archivosEnMemoria = {};
+let resultadoActual = null;
+let pendienteConfirmar = false;
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.textContent = 'Correo o contraseña incorrectos.';
+  }
+};
+
+window.doLogout = async function() {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+    await cargarConfig();
+    await cargarFlota();
+    cargarHistorial();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('appScreen').style.display = 'none';
+  }
+});
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+async function cargarConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'parametros'));
+    if (snap.exists()) {
+      cfg = { ...cfg, ...snap.data() };
+      document.getElementById('cfgRadio').value = cfg.radio;
+      document.getElementById('cfgRalenti').value = cfg.ralenti;
+      document.getElementById('cfgLat').value = cfg.lat;
+      document.getElementById('cfgLon').value = cfg.lon;
+    }
+  } catch(e) {}
+}
+
+window.guardarConfig = async function() {
+  cfg.radio = parseFloat(document.getElementById('cfgRadio').value);
+  cfg.ralenti = parseInt(document.getElementById('cfgRalenti').value);
+  cfg.lat = parseFloat(document.getElementById('cfgLat').value);
+  cfg.lon = parseFloat(document.getElementById('cfgLon').value);
+  await setDoc(doc(db, 'config', 'parametros'), cfg);
+  document.getElementById('cfgMsg').textContent = '✓ Guardado correctamente';
+  setTimeout(() => document.getElementById('cfgMsg').textContent = '', 3000);
+};
+
+// ─── FLOTA ───────────────────────────────────────────────────────────────────
+async function cargarFlota() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'flota'));
+    if (snap.exists()) {
+      flotaRegistrada = snap.data().vehiculos || [];
+      renderFlotaInputs();
+    }
+  } catch(e) {}
+}
+
+function renderFlotaInputs() {
+  const cont = document.getElementById('flotaInputs');
+  if (flotaRegistrada.length === 0) flotaRegistrada = [''];
+  cont.innerHTML = flotaRegistrada.map((v, i) => `
+    <div class="veh-row">
+      <input type="text" value="${v}" placeholder="Nombre del vehículo (ej: Xpander blanco)" onchange="flotaRegistrada[${i}]=this.value">
+      <button class="btn-add-veh" onclick="remVeh(${i})">✕</button>
+    </div>`).join('');
+}
+
+window.addVehInput = function() {
+  flotaRegistrada.push('');
+  renderFlotaInputs();
+};
+
+window.remVeh = function(i) {
+  flotaRegistrada.splice(i, 1);
+  renderFlotaInputs();
+};
+
+window.guardarFlota = async function() {
+  const limpios = flotaRegistrada.map(v => v.trim()).filter(Boolean);
+  flotaRegistrada = limpios;
+  await setDoc(doc(db, 'config', 'flota'), { vehiculos: limpios });
+  document.getElementById('flotaMsg').textContent = `✓ ${limpios.length} vehículo(s) guardados`;
+  setTimeout(() => document.getElementById('flotaMsg').textContent = '', 3000);
+};
+
+// ─── CREAR USUARIO ───────────────────────────────────────────────────────────
+window.crearUsuario = async function() {
+  const email = document.getElementById('nuevoEmail').value.trim();
+  const pass = document.getElementById('nuevoPass').value;
+  const msgEl = document.getElementById('userMsg');
+  try {
+    await createUserWithEmailAndPassword(auth, email, pass);
+    msgEl.style.color = '#27ae60';
+    msgEl.textContent = `✓ Usuario ${email} creado correctamente`;
+  } catch(e) {
+    msgEl.style.color = '#c0392b';
+    msgEl.textContent = 'Error: ' + (e.code === 'auth/email-already-in-use' ? 'El correo ya está registrado.' : e.message);
+  }
+};
+
+// ─── PARSEAR ARCHIVOS ────────────────────────────────────────────────────────
+function parsearReporte(htmlText) {
+  const parser = new DOMParser();
+  const doc2 = parser.parseFromString(htmlText, 'text/html');
+  const filas = doc2.querySelectorAll('tr');
+  let vehiculo = '', fechaReporte = '';
+  const movimientos = [];
+
+  filas.forEach(fila => {
+    const celdas = fila.querySelectorAll('td');
+    if (!celdas.length) return;
+    if (celdas.length === 1) {
+      const txt = celdas[0].textContent.trim();
+      if (txt.includes('Reporte de viaje')) vehiculo = txt.replace('-Reporte de viaje','').trim();
+      if (txt.includes('Desde')) fechaReporte = txt;
+      return;
+    }
+    if (celdas.length < 7) return;
+    const num = celdas[0].textContent.trim();
+    if (isNaN(parseInt(num))) return;
+
+    const estado = celdas[2].textContent.trim();
+    const fechaHora = celdas[3].textContent.trim();
+    const km = celdas[4].textContent.trim();
+    const duracion = celdas[5].textContent.trim();
+
+    const origenTexto = celdas[6].textContent.trim();
+    const destTexto = celdas[7] ? celdas[7].textContent.trim() : '-';
+
+    const partes = fechaHora.split('~');
+    const inicio = new Date(partes[0].trim().replace(' ','T'));
+    const fin = partes[1] ? new Date(partes[1].trim().replace(' ','T')) : null;
+
+    movimientos.push({
+      num: parseInt(num), vehiculo, estado, inicio: inicio.toISOString(),
+      fin: fin ? fin.toISOString() : null,
+      duracionSeg: parseDurSeg(duracion), duracionStr: duracion,
+      km: km === '-' ? 0 : parseFloat(km),
+      origenCoords: parseCoordsTexto(origenTexto),
+      origenDir: limpiarDir(origenTexto),
+      destCoords: parseCoordsTexto(destTexto),
+      destDir: limpiarDir(destTexto),
+    });
+  });
+  return { vehiculo, fechaReporte, movimientos };
+}
+
+function parseCoordsTexto(txt) {
+  const m = txt.match(/([\d.]+)N,([\d.]+)W/);
+  if (!m) return null;
+  return { lat: parseFloat(m[1]), lon: -parseFloat(m[2]) };
+}
+
+function limpiarDir(txt) {
+  return txt.replace(/[\d.]+N,[\d.]+W\s*/,'').replace(/\|/g,'').trim();
+}
+
+function parseDurSeg(dur) {
+  if (!dur) return 0;
+  let s = 0;
+  const h = dur.match(/(\d+)h/); if (h) s += parseInt(h[1])*3600;
+  const m = dur.match(/(\d+)min/); if (m) s += parseInt(m[1])*60;
+  const sec = dur.match(/(\d+)s/); if (sec) s += parseInt(sec[1]);
+  return s;
+}
+
+function formatDur(seg) {
+  const h = Math.floor(seg/3600), m = Math.floor((seg%3600)/60), s = seg%60;
+  if (h > 0) return `${h}h ${m}min`;
+  if (m > 0) return `${m}min ${s}s`;
+  return `${s}s`;
+}
+
+function haversine(la1,lo1,la2,lo2) {
+  const R=6371, dL=(la2-la1)*Math.PI/180, dO=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dO/2)**2;
+  return R*2*Math.asin(Math.sqrt(a));
+}
+
+const ZONAS = [
+  { nombre:'Zona Hotelera', lat:21.0974, lon:-86.7725, radio:4 },
+  { nombre:'Centro Cancún', lat:21.1619, lon:-86.8515, radio:3 },
+  { nombre:'Puerto Morelos', lat:20.8460, lon:-86.8761, radio:3 },
+  { nombre:'Playa del Carmen', lat:20.6296, lon:-87.0739, radio:5 },
+  { nombre:'Tulum', lat:20.2120, lon:-87.4654, radio:6 },
+  { nombre:'Cancún ciudad', lat:21.1619, lon:-86.8515, radio:10 },
+];
+
+function detectarZona(lat, lon) {
+  for (const z of ZONAS) if (haversine(lat,lon,z.lat,z.lon)<=z.radio) return z.nombre;
+  return 'Otra zona';
+}
+
+function analizar(datos) {
+  const res = { vehiculo:datos.vehiculo, fechaReporte:datos.fechaReporte,
+    viajesDesdeAeropuerto:[], esperasEnAeropuerto:[], ralenties:[], todosMovimientos:[] };
+
+  datos.movimientos.forEach(m => {
+    const oC = m.origenCoords, dC = m.destCoords;
+    const oEnA = oC && haversine(oC.lat,oC.lon,cfg.lat,cfg.lon)<=cfg.radio;
+    const dEnA = dC && haversine(dC.lat,dC.lon,cfg.lat,cfg.lon)<=cfg.radio;
+    let tipo='normal', zonaDestino='';
+
+    if (m.estado==='Conducción') {
+      if (oEnA) { tipo='viaje-aeropuerto'; zonaDestino=dC?detectarZona(dC.lat,dC.lon):'Desconocido'; }
+      else if (dEnA) { tipo='regreso-aeropuerto'; zonaDestino='Aeropuerto CUN'; }
+    } else if (m.estado==='Estacionamiento') {
+      if (oEnA) tipo = m.duracionSeg>=cfg.ralenti*60?'espera-aeropuerto-larga':'espera-aeropuerto';
+      else if (m.duracionSeg>=cfg.ralenti*60) tipo='ralenti';
+    }
+
+    const mov={...m,tipo,zonaDestino};
+    res.todosMovimientos.push(mov);
+    if (tipo==='viaje-aeropuerto') res.viajesDesdeAeropuerto.push(mov);
+    if (tipo.includes('espera-aeropuerto')) res.esperasEnAeropuerto.push(mov);
+    if (tipo==='ralenti') res.ralenties.push(mov);
+  });
+  return res;
+}
+
+// ─── CARGA DE ARCHIVOS ───────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  Array.from(e.target.files).forEach(leerArchivo);
+});
+
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); Array.from(e.dataTransfer.files).forEach(leerArchivo); });
+
+function leerArchivo(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const datos = parsearReporte(e.target.result);
+    if (!datos.vehiculo) { alert('No se pudo leer: ' + file.name); return; }
+    archivosEnMemoria[datos.vehiculo] = datos;
+    actualizarChips();
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function actualizarChips() {
+  const cont = document.getElementById('vehStatus');
+  const names = Object.keys(archivosEnMemoria);
+  cont.innerHTML = names.map(n => `
+    <div class="veh-chip">
+      ✓ ${n}
+      <span class="rm" onclick="delete archivosEnMemoria['${n}'];actualizarChips()">✕</span>
+    </div>`).join('');
+
+  // Verificar faltantes
+  const faltantes = flotaRegistrada.filter(v => !names.some(n => n.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(n.toLowerCase())));
+  const warnEl = document.getElementById('warnFaltantes');
+  if (flotaRegistrada.length > 0 && faltantes.length > 0 && names.length > 0) {
+    warnEl.style.display = 'block';
+    warnEl.innerHTML = `<div class="warn-faltantes">⚠️ Faltan reportes de: <strong>${faltantes.join(', ')}</strong></div>`;
+  } else { warnEl.style.display = 'none'; }
+
+  document.getElementById('btnAnalizar').disabled = names.length === 0;
+}
+
+// ─── ANALIZAR Y GUARDAR ──────────────────────────────────────────────────────
+window.analizarYGuardar = function() {
+  const names = Object.keys(archivosEnMemoria);
+  const faltantes = flotaRegistrada.filter(v => !names.some(n => n.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(n.toLowerCase())));
+
+  if (flotaRegistrada.length > 0 && faltantes.length > 0) {
+    document.getElementById('modalMsg').textContent =
+      `Faltan los reportes de: ${faltantes.join(', ')}. ¿Deseas analizar solo con los ${names.length} vehículo(s) cargados?`;
+    document.getElementById('modalFaltantes').classList.add('show');
+    return;
+  }
+  ejecutarAnalisis();
+};
+
+window.cerrarModal = function() {
+  document.getElementById('modalFaltantes').classList.remove('show');
+};
+
+window.confirmarAnalisis = function() {
+  cerrarModal();
+  ejecutarAnalisis();
+};
+
+async function ejecutarAnalisis() {
+  cfg.radio = parseFloat(document.getElementById('cfgRadio')?.value || cfg.radio);
+  cfg.ralenti = parseInt(document.getElementById('cfgRalenti')?.value || cfg.ralenti);
+
+  const todos = Object.values(archivosEnMemoria);
+  const resultados = todos.map(d => analizar(d));
+  resultadoActual = resultados;
+
+  renderResultados(resultados);
+
+  // Guardar en Firestore
+  try {
+    const fecha = new Date().toISOString().split('T')[0];
+    const payload = {
+      fecha,
+      creadoEn: new Date().toISOString(),
+      vehiculos: todos.map(d => d.vehiculo),
+      totalViajes: resultados.reduce((s,r)=>s+r.viajesDesdeAeropuerto.length,0),
+      totalKm: parseFloat(resultados.reduce((s,r)=>s+r.viajesDesdeAeropuerto.reduce((a,m)=>a+m.km,0),0).toFixed(2)),
+      totalRalentiSeg: resultados.reduce((s,r)=>s+r.ralenties.reduce((a,m)=>a+m.duracionSeg,0),0),
+      resultados: JSON.stringify(resultados),
+    };
+    await addDoc(collection(db, 'reportes'), payload);
+    console.log('Guardado en Firestore');
+  } catch(e) { console.error('Error al guardar:', e); }
+}
+
+// ─── RENDERIZADO ─────────────────────────────────────────────────────────────
+function renderResultados(resultados) {
+  document.getElementById('resultados').style.display = 'block';
+  const totalViajes = resultados.reduce((s,r)=>s+r.viajesDesdeAeropuerto.length,0);
+  const totalKm = resultados.reduce((s,r)=>s+r.viajesDesdeAeropuerto.reduce((a,m)=>a+m.km,0),0);
+  const totalRal = resultados.reduce((s,r)=>s+r.ralenties.reduce((a,m)=>a+m.duracionSeg,0),0);
+  const totalEsp = resultados.reduce((s,r)=>s+r.esperasEnAeropuerto.reduce((a,m)=>a+m.duracionSeg,0),0);
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi ok"><div class="lbl">Viajes desde aeropuerto</div><div class="val">${totalViajes}</div><div class="sub">en el período</div></div>
+    <div class="kpi neu"><div class="lbl">Kilómetros de servicio</div><div class="val">${totalKm.toFixed(1)}</div><div class="sub">km totales</div></div>
+    <div class="kpi warn"><div class="lbl">Espera en aeropuerto</div><div class="val">${formatDur(totalEsp)}</div><div class="sub">tiempo total</div></div>
+    <div class="kpi ${totalRal>0?'bad':'ok'}"><div class="lbl">Ralentí improductivo</div><div class="val">${formatDur(totalRal)}</div><div class="sub">motor sin mover</div></div>`;
+
+  let alertasHtml = '';
+  resultados.forEach(r => {
+    r.ralenties.forEach(m => {
+      if(m.duracionSeg>=600) alertasHtml+=`<div class="alerta bad"><strong>⚠️ Ralentí – ${m.vehiculo}</strong>Motor encendido sin moverse ${formatDur(m.duracionSeg)} · ${new Date(m.inicio).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>`;
+    });
+    if(r.viajesDesdeAeropuerto.length>0) alertasHtml+=`<div class="alerta ok"><strong>✅ ${r.vehiculo}</strong>${r.viajesDesdeAeropuerto.length} viaje(s) desde aeropuerto registrados</div>`;
+  });
+  document.getElementById('alertasBox').innerHTML = alertasHtml;
+
+  renderTabViajes(resultados);
+  renderTabEspera(resultados);
+  renderTabRalenti(resultados);
+  renderTabTodos(resultados);
+  renderTabFactura(resultados);
+}
+
+function hora(iso) { return iso ? new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '—'; }
+
+function renderTabViajes(resultados) {
+  const viajes = resultados.flatMap(r=>r.viajesDesdeAeropuerto);
+  if (!viajes.length) { document.getElementById('tab-viajes').innerHTML=`<div class="empty"><div class="ico">🛫</div><p>No se detectaron viajes desde el aeropuerto.<br>Verifica el radio de geocerca en Configuración.</p></div>`; return; }
+  document.getElementById('tab-viajes').innerHTML = `<table><thead><tr><th>#</th><th>Vehículo</th><th>Salida</th><th>Llegada</th><th>Duración</th><th>Km</th><th>Zona destino</th></tr></thead><tbody>${
+    viajes.map((m,i)=>`<tr><td>${i+1}</td><td>${m.vehiculo}</td><td>${hora(m.inicio)}</td><td>${hora(m.fin)}</td><td>${m.duracionStr}</td><td>${m.km.toFixed(2)}</td><td><span class="badge b-aero">${m.zonaDestino}</span></td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+function renderTabEspera(resultados) {
+  const esperas = resultados.flatMap(r=>r.esperasEnAeropuerto);
+  if (!esperas.length) { document.getElementById('tab-espera').innerHTML=`<div class="empty"><div class="ico">⏳</div><p>No se detectaron esperas en zona del aeropuerto.</p></div>`; return; }
+  document.getElementById('tab-espera').innerHTML = `<table><thead><tr><th>Vehículo</th><th>Llegada</th><th>Salida</th><th>Tiempo espera</th><th>Estado</th></tr></thead><tbody>${
+    esperas.map(m=>`<tr><td>${m.vehiculo}</td><td>${hora(m.inicio)}</td><td>${hora(m.fin)}</td><td><strong>${formatDur(m.duracionSeg)}</strong></td><td><span class="badge ${m.duracionSeg>=1800?'b-ralenti':'b-espera'}">${m.duracionSeg>=1800?'Espera larga':'En espera'}</span></td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+function renderTabRalenti(resultados) {
+  const ral = resultados.flatMap(r=>r.ralenties);
+  if (!ral.length) { document.getElementById('tab-ralenti').innerHTML=`<div class="empty"><div class="ico">✅</div><p>Sin ralentí improductivo en este período.</p></div>`; return; }
+  document.getElementById('tab-ralenti').innerHTML = `<table><thead><tr><th>Vehículo</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Ubicación</th></tr></thead><tbody>${
+    ral.map(m=>`<tr><td>${m.vehiculo}</td><td>${hora(m.inicio)}</td><td>${hora(m.fin)}</td><td><span class="badge b-ralenti">${formatDur(m.duracionSeg)}</span></td><td style="font-size:11px;color:#888">${m.origenDir.substring(0,60)}</td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+function renderTabTodos(resultados) {
+  const movs = resultados.flatMap(r=>r.todosMovimientos);
+  document.getElementById('tab-todos').innerHTML = `<table><thead><tr><th>#</th><th>Vehículo</th><th>Estado</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Km</th><th>Tipo</th></tr></thead><tbody>${
+    movs.map(m=>{
+      const badge = m.tipo==='viaje-aeropuerto'?'b-aero':m.tipo.includes('espera')?'b-espera':m.tipo==='ralenti'?'b-ralenti':m.estado==='Conducción'?'b-viaje':'b-normal';
+      return `<tr><td>${m.num}</td><td>${m.vehiculo}</td><td>${m.estado}</td><td>${hora(m.inicio)}</td><td>${hora(m.fin)}</td><td>${m.duracionStr}</td><td>${m.km>0?m.km.toFixed(2):'—'}</td><td><span class="badge ${badge}">${m.tipo.replace(/-/g,' ')}</span></td></tr>`;
+    }).join('')
+  }</tbody></table>`;
+}
+
+function renderTabFactura(resultados) {
+  const viajes = resultados.flatMap(r=>r.viajesDesdeAeropuerto);
+  const totalKm = viajes.reduce((s,m)=>s+m.km,0);
+  const porZona = {};
+  viajes.forEach(m => { if(!porZona[m.zonaDestino]) porZona[m.zonaDestino]={count:0,km:0}; porZona[m.zonaDestino].count++; porZona[m.zonaDestino].km+=m.km; });
+
+  document.getElementById('tab-factura').innerHTML = `
+  <div class="factura-box">
+    <h3>Resumen del día para facturación</h3>
+    <div class="f-row"><span>Total viajes registrados por GPS</span><span><strong>${viajes.length}</strong></span></div>
+    <div class="f-row"><span>Kilómetros de servicio</span><span>${totalKm.toFixed(2)} km</span></div>
+    ${Object.entries(porZona).map(([z,d])=>`<div class="f-row"><span>${z}</span><span>${d.count} viaje(s) · ${d.km.toFixed(1)} km</span></div>`).join('')}
+    <div class="f-row f-total"><span>TOTAL A FACTURAR</span><span>${viajes.length} servicios</span></div>
+  </div>
+  <div class="factura-box">
+    <h3>Cotejo con boletos del chofer</h3>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">#</th>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">HORA SALIDA</th>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">HORA LLEGADA</th>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">ZONA</th>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">KM</th>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">MONTO BOLETO</th>
+        <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:10px">ESTADO</th>
+      </tr></thead><tbody>
+      ${viajes.map((m,i)=>`<tr>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8;font-size:12px">${i+1}</td>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8;font-size:12px">${hora(m.inicio)}</td>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8;font-size:12px">${hora(m.fin)}</td>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8;font-size:12px"><span class="badge b-aero">${m.zonaDestino}</span></td>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8;font-size:12px">${m.km.toFixed(2)}</td>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8"><input type="text" placeholder="$0.00" style="width:80px;border:0.5px solid #ddd;border-radius:5px;padding:4px 7px;font-size:12px"></td>
+        <td style="padding:8px;border-bottom:0.5px solid #f0f0e8">
+          <select style="border:0.5px solid #ddd;border-radius:5px;padding:3px 6px;font-size:11px">
+            <option>⬜ Pendiente</option><option>✅ Confirmado</option><option>❌ No coincide</option>
+          </select>
+        </td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ─── HISTORIAL ───────────────────────────────────────────────────────────────
+async function cargarHistorial() {
+  try {
+    const q = query(collection(db,'reportes'), orderBy('creadoEn','desc'), limit(30));
+    const snap = await getDocs(q);
+    const lista = document.getElementById('historialLista');
+    if (snap.empty) { lista.innerHTML=`<div class="empty"><div class="ico">📂</div><p>Aún no hay reportes guardados.</p></div>`; return; }
+    lista.innerHTML = `<div class="hist-list">${snap.docs.map(d=>{
+      const data=d.data();
+      return `<div class="hist-item" onclick="verReporte('${d.id}')">
+        <div><div class="hist-fecha">${data.fecha}</div><div class="hist-meta">${data.vehiculos?.join(', ')||''}</div></div>
+        <div class="hist-badge">${data.totalViajes||0} viajes · ${data.totalKm||0} km</div>
+      </div>`;
+    }).join('')}</div>`;
+  } catch(e) { document.getElementById('historialLista').innerHTML=`<div class="empty"><p>Error al cargar historial.</p></div>`; }
+}
+
+window.verReporte = async function(id) {
+  showMain('dashboard', document.querySelector('.tab'));
+  document.querySelectorAll('.tab')[0].click();
+  try {
+    const snap = await getDoc(doc(db,'reportes',id));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const resultados = JSON.parse(data.resultados);
+    renderResultados(resultados);
+  } catch(e) { alert('Error al cargar reporte'); }
+};
+
+// ─── NAVEGACIÓN ──────────────────────────────────────────────────────────────
+window.showMain = function(name, el) {
+  ['dashboard','realtime','historial','configuracion'].forEach(n => {
+    const el2 = document.getElementById('main-'+n);
+    if(el2) el2.style.display='none';
+  });
+  const target = document.getElementById('main-'+name);
+  if(target) target.style.display='block';
+  document.querySelectorAll('.tabs:first-of-type .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(name==='historial') cargarHistorial();
+};
+
+window.showTab = function(name, el) {
+  ['viajes','espera','ralenti','todos','factura'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('#tabsAnalisis .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+};
+
+// ─── PROTRACK365 API EN TIEMPO REAL ─────────────────────────────────────────
+let apiToken = null;
+let autoUpdateInterval = null;
+let autoUpdateOn = true;
+let ralentiTimers = {};
+
+const IMEIS_MAP = {
+  'Xpander blanco': '864035053359056',
+  'Xpander gris':   '864035054251401',
+};
+
+window.conectarAPI = async function() {
+  const user = document.getElementById('apiUser').value.trim();
+  const pass = document.getElementById('apiPass').value;
+  const statusEl = document.getElementById('apiStatus');
+  if (!user || !pass) { statusEl.innerHTML = '<span style="color:#c0392b">Ingresa usuario y contraseña.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#888">Conectando...</span>';
+  try {
+    const ts  = Math.floor(Date.now() / 1000);
+    const sig = CryptoJS.MD5(CryptoJS.MD5(pass).toString() + ts).toString();
+    const url = `https://api.protrack365.com/api/authorization?time=${ts}&account=${encodeURIComponent(user)}&signature=${sig}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code !== 0) throw new Error(data.message || 'Error de autenticación');
+    apiToken = data.record.access_token;
+    document.getElementById('apiPass').value = '';
+    document.getElementById('apiLoginBox').style.display = 'none';
+    document.getElementById('realtimePanel').style.display = 'block';
+    document.getElementById('fechaReporte').value = new Date().toISOString().split('T')[0];
+    await actualizarTiempoReal();
+    autoUpdateInterval = setInterval(actualizarTiempoReal, 60000);
+  } catch(e) {
+    statusEl.innerHTML = `<span style="color:#c0392b">Error: ${e.message}</span>`;
+  }
+};
+
+window.desconectarAPI = function() {
+  apiToken = null;
+  clearInterval(autoUpdateInterval);
+  document.getElementById('apiLoginBox').style.display = 'block';
+  document.getElementById('realtimePanel').style.display = 'none';
+  document.getElementById('apiStatus').textContent = '';
+};
+
+window.toggleAutoUpdate = function() {
+  autoUpdateOn = !autoUpdateOn;
+  document.getElementById('btnAuto').textContent = `Auto: ${autoUpdateOn ? 'ON' : 'OFF'}`;
+  document.getElementById('btnAuto').style.background = autoUpdateOn ? '#1a1a18' : '#888';
+  if (autoUpdateOn) autoUpdateInterval = setInterval(actualizarTiempoReal, 60000);
+  else clearInterval(autoUpdateInterval);
+};
+
+window.actualizarTiempoReal = async function() {
+  if (!apiToken) return;
+  try {
+    const imeis = Object.values(IMEIS_MAP).join(',');
+    const res = await fetch(`https://api.protrack365.com/api/track?access_token=${apiToken}&imeis=${imeis}`);
+    const data = await res.json();
+    if (data.code !== 0) throw new Error(data.message);
+    document.getElementById('lastUpdate').textContent = '· ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    renderVehicleCards(data.record);
+  } catch(e) {
+    document.getElementById('connDot').style.background = '#c0392b';
+  }
+};
+
+function renderVehicleCards(vehiculos) {
+  const cont = document.getElementById('vehicleCards');
+  const alertasCont = document.getElementById('realtimeAlertas');
+  const aLat = parseFloat(document.getElementById('cfgLat')?.value || 21.0365);
+  const aLon = parseFloat(document.getElementById('cfgLon')?.value || -86.8771);
+  const radio = parseFloat(document.getElementById('cfgRadio')?.value || 1.5);
+  const minRal = parseInt(document.getElementById('cfgRalenti')?.value || 10);
+  const nombrePorImei = {};
+  Object.entries(IMEIS_MAP).forEach(([n,i]) => nombrePorImei[i] = n);
+  let alertasHtml = '', cardsHtml = '';
+  vehiculos.forEach(v => {
+    const nombre = nombrePorImei[v.imei] || v.imei;
+    const dist = haversine(v.latitude, v.longitude, aLat, aLon);
+    const enAero = dist <= radio;
+    const motorOn = v.accstatus === 1;
+    const vel = v.speed || 0;
+    const enMov = vel > 2;
+    if (motorOn && !enMov && !enAero) {
+      if (!ralentiTimers[v.imei]) ralentiTimers[v.imei] = Date.now();
+      const min = Math.floor((Date.now() - ralentiTimers[v.imei]) / 60000);
+      if (min >= minRal) alertasHtml += `<div class="alerta bad"><strong>⚠️ Ralentí – ${nombre}</strong>Motor encendido sin moverse ~${min} min fuera del aeropuerto</div>`;
+    } else { delete ralentiTimers[v.imei]; }
+    let estado='', eColor='#888', eBg='#f5f5f0';
+    if (enAero && !enMov)  { estado='🛬 Esperando en aeropuerto'; eColor='#185fa5'; eBg='#e3f2fd'; }
+    else if (enAero)       { estado='🛫 Saliendo del aeropuerto'; eColor='#27ae60'; eBg='#e8f5e9'; }
+    else if (enMov)        { estado='🚗 En ruta';                 eColor='#27ae60'; eBg='#e8f5e9'; }
+    else if (motorOn)      { estado='⚠️ Motor encendido / detenido'; eColor='#e67e22'; eBg='#fff8f0'; }
+    else                   { estado='⬛ Detenido / Motor apagado'; eColor='#888'; eBg='#f5f5f0'; }
+    const tGPS = new Date(v.gpstime * 1000).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    cardsHtml += `<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;overflow:hidden">
+      <div style="background:${eBg};padding:10px 14px;border-bottom:0.5px solid #e0e0d8">
+        <div style="font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:2px">${nombre}</div>
+        <div style="font-size:12px;color:${eColor};font-weight:500">${estado}</div>
+      </div>
+      <div style="padding:12px 14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="text-align:center;background:#f8f8f5;border-radius:7px;padding:8px">
+            <div style="font-size:18px;font-weight:600;color:#1a1a18">${vel}</div>
+            <div style="font-size:10px;color:#aaa">km/h</div>
+          </div>
+          <div style="text-align:center;background:#f8f8f5;border-radius:7px;padding:8px">
+            <div style="font-size:18px;font-weight:600;color:#1a1a18">${dist.toFixed(1)}</div>
+            <div style="font-size:10px;color:#aaa">km del aeropuerto</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px">Motor: <strong style="color:${motorOn?'#27ae60':'#c0392b'}">${motorOn?'Encendido':'Apagado'}</strong></div>
+        <div style="font-size:11px;color:#888;margin-bottom:4px">Posición: ${v.latitude.toFixed(5)}, ${v.longitude.toFixed(5)}</div>
+        <div style="font-size:11px;color:#888">GPS actualizado: ${tGPS}</div>
+        <a href="https://maps.google.com/?q=${v.latitude},${v.longitude}" target="_blank" style="display:block;margin-top:10px;text-align:center;background:#1a1a18;color:#fff;border-radius:7px;padding:6px;font-size:12px;text-decoration:none">Ver en mapa</a>
+      </div>
+    </div>`;
+  });
+  cont.innerHTML = cardsHtml;
+  alertasCont.innerHTML = alertasHtml;
+}
+
+window.generarReporteAPI = async function() {
+  if (!apiToken) return;
+  const fecha = document.getElementById('fechaReporte').value;
+  const statusEl = document.getElementById('reporteAPIStatus');
+  if (!fecha) { statusEl.innerHTML = '<span style="color:#c0392b">Selecciona una fecha.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#888">Consultando datos del día...</span>';
+  try {
+    const inicio = Math.floor(new Date(fecha + 'T00:00:00').getTime() / 1000);
+    const fin    = Math.floor(new Date(fecha + 'T23:59:59').getTime() / 1000);
+    const resultados = [];
+    for (const [nombre, imei] of Object.entries(IMEIS_MAP)) {
+      const res = await fetch(`https://api.protrack365.com/api/tripReport?access_token=${apiToken}&imei=${imei}&starttime=${inicio}&endtime=${fin}`);
+      const data = await res.json();
+      if (data.code === 0 && data.record) resultados.push({ vehiculo: nombre, imei, trips: data.record, fecha });
+    }
+    if (!resultados.length) { statusEl.innerHTML = '<span style="color:#e67e22">No se encontraron viajes para esa fecha.</span>'; return; }
+    const total = resultados.reduce((s,r)=>s+(r.trips?.length||0),0);
+    statusEl.innerHTML = `<span style="color:#27ae60">✓ ${total} registros obtenidos. Procesando...</span>`;
+    const datosProc = resultados.map(r => ({
+      vehiculo: r.vehiculo,
+      fechaReporte: `API · ${fecha}`,
+      movimientos: (r.trips||[]).map((t,i) => ({
+        num: i+1, vehiculo: r.vehiculo,
+        estado: (t.distance||0) > 0 ? 'Conducción' : 'Estacionamiento',
+        inicio: new Date(t.starttime*1000).toISOString(),
+        fin: new Date(t.endtime*1000).toISOString(),
+        duracionSeg: t.endtime - t.starttime,
+        duracionStr: formatDur(t.endtime - t.starttime),
+        km: parseFloat(t.distance||0),
+        origenCoords: t.startlat ? {lat:t.startlat, lon:t.startlng} : null,
+        origenDir: t.startaddress || '',
+        destCoords: t.endlat ? {lat:t.endlat, lon:t.endlng} : null,
+        destDir: t.endaddress || '',
+      }))
+    }));
+    const analizado = datosProc.map(d => analizar(d));
+    renderResultados(analizado);
+    const totalViajes = analizado.reduce((s,r)=>s+r.viajesDesdeAeropuerto.length,0);
+    await addDoc(collection(db,'reportes'), {
+      fecha, creadoEn: new Date().toISOString(), fuente: 'API Protrack365',
+      vehiculos: resultados.map(r=>r.vehiculo), totalViajes,
+      totalKm: parseFloat(analizado.reduce((s,r)=>s+r.viajesDesdeAeropuerto.reduce((a,m)=>a+m.km,0),0).toFixed(2)),
+      resultados: JSON.stringify(analizado),
+    });
+    statusEl.innerHTML = `<span style="color:#27ae60">✓ Guardado. ${totalViajes} viajes desde aeropuerto detectados.</span>`;
+    document.querySelectorAll('.tabs:first-of-type .tab')[0].click();
+  } catch(e) {
+    statusEl.innerHTML = `<span style="color:#c0392b">Error: ${e.message}</span>`;
+  }
+};
+
+// ─── FIN MÓDULO API ──────────────────────────────────────────────────────────
+
+// Enter en login
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') window.doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+</script>
+</body>
+</html>
