@@ -26,52 +26,52 @@
 <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;JA Cancún Flota&quot;,&quot;short_name&quot;:&quot;JA Flota&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#1a1a18&quot;,&quot;theme_color&quot;:&quot;#1a1a18&quot;}">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f0; color: #1a1a18; font-size: 14px; min-height: 100vh; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #eef5f1; color: #1a1a18; font-size: 14px; min-height: 100vh; }
 
 /* LOGIN */
-#loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a18; }
-.login-card { background: #fff; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 380px; }
+#loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #eef5f1; }
+.login-card { background: #ffffff; border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid #e8f0e8; }
 .login-logo { font-size: 28px; font-weight: 700; color: #1a1a18; margin-bottom: 4px; }
 .login-sub { color: #888; font-size: 13px; margin-bottom: 28px; }
 .login-card label { display: block; font-size: 12px; color: #666; font-weight: 500; margin-bottom: 5px; margin-top: 14px; }
 .login-card input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; outline: none; transition: border .2s; }
 .login-card input:focus { border-color: #1a1a18; }
-.btn-login { width: 100%; background: #1a1a18; color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 22px; transition: opacity .2s; }
-.btn-login:hover { opacity: .85; }
+.btn-login { width: 100%; background: linear-gradient(135deg, #8BC34A, #4CAF50, #29B6F6); color: #ffffff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 22px; transition: all .2s; box-shadow: 0 2px 8px rgba(76,175,80,0.3); }
+.btn-login:hover { opacity: .9; box-shadow: 0 4px 12px rgba(76,175,80,0.4); transform: translateY(-1px); }
 .login-error { color: #c0392b; font-size: 12px; margin-top: 10px; text-align: center; min-height: 18px; }
 
 /* HEADER */
 #appScreen { display: none; }
-header { background: #1a1a18; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+header { background: #ffffff; color: #3d3d3b; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #e0e8e0; box-shadow: 0 1px 8px rgba(0,0,0,0.06); padding-top: max(14px, env(safe-area-inset-top)); }
 .header-left { display: flex; align-items: center; gap: 12px; }
-.header-logo { font-size: 15px; font-weight: 600; }
-.header-fecha { font-size: 11px; color: #888; }
-.btn-logout { background: transparent; border: 1px solid #444; color: #aaa; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
-.btn-logout:hover { border-color: #888; color: #fff; }
+.header-logo { font-size: 15px; font-weight: 600; color: #3d3d3b; }
+.header-fecha { font-size: 11px; color: #999; }
+.btn-logout { background: transparent; border: 0.5px solid #d8d8d4; color: #3d3d3b; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.btn-logout:hover { border-color: #4CAF50; color: #4CAF50; background: #f0fff4; }
 
 /* MAIN */
-.main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.main { max-width: 1100px; margin: 0 auto; padding: 16px; background: transparent; }
 
 /* UPLOAD */
 .upload-section { background: #fff; border-radius: 12px; border: 0.5px solid #e0e0d8; padding: 20px; margin-bottom: 16px; }
 .upload-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
 .drop-zone { border: 1.5px dashed #ccc; border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color .2s; background: #fafaf8; }
-.drop-zone:hover, .drop-zone.drag { border-color: #1a1a18; background: #f5f5f0; }
+.drop-zone:hover, .drop-zone.drag { border-color: #1a1a18; background: #eef5f1; }
 .drop-zone input { display: none; }
 .drop-zone p { color: #666; margin-bottom: 6px; font-size: 13px; }
 .drop-zone small { color: #aaa; font-size: 11px; }
-.btn-sel { background: #1a1a18; color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; cursor: pointer; margin-top: 10px; }
+.btn-sel { background: #f0f0ec; color: #3d3d3b; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; cursor: pointer; margin-top: 10px; }
 
 /* VEHICULOS CARGADOS */
 .vehiculos-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.veh-chip { display: flex; align-items: center; gap: 6px; background: #f0f7ff; border: 0.5px solid #b5d4f4; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #185fa5; }
+.veh-chip { display: flex; align-items: center; gap: 6px; background: #f0fff4; border: 0.5px solid #a5d6a7; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #2e7d32; font-weight: 500; }
 .veh-chip .rm { cursor: pointer; color: #aaa; margin-left: 4px; font-size: 14px; line-height: 1; }
 .veh-chip .rm:hover { color: #c0392b; }
 
 /* BOTÓN ANALIZAR */
-.btn-analizar { background: #27ae60; color: #fff; border: none; border-radius: 8px; padding: 11px 28px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 14px; transition: opacity .2s; }
+.btn-analizar { background: linear-gradient(135deg, #8BC34A, #4CAF50); color: #fff; border: none; border-radius: 8px; padding: 11px 28px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 14px; transition: opacity .2s; }
 .btn-analizar:disabled { opacity: .4; cursor: not-allowed; }
-.btn-analizar:hover:not(:disabled) { opacity: .88; }
+.btn-analizar:hover:not(:disabled) { opacity: .92; box-shadow: 0 4px 12px rgba(76,175,80,0.35); transform: translateY(-1px); }
 
 /* ADVERTENCIA VEHICULOS FALTANTES */
 .warn-faltantes { background: #fff8e1; border: 0.5px solid #ffe082; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #856404; margin-top: 10px; }
@@ -82,10 +82,10 @@ header { background: #1a1a18; color: #fff; padding: 12px 20px; display: flex; al
 .kpi .lbl { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
 .kpi .val { font-size: 22px; font-weight: 700; }
 .kpi .sub { font-size: 10px; color: #bbb; margin-top: 2px; }
-.kpi.ok .val { color: #27ae60; }
+.kpi.ok .val { color: #4CAF50; }
 .kpi.warn .val { color: #e67e22; }
 .kpi.bad .val { color: #c0392b; }
-.kpi.neu .val { color: #1a1a18; }
+.kpi.neu .val { color: #3d3d3b; }
 
 /* ALERTAS */
 .alertas { margin-bottom: 14px; }
@@ -98,7 +98,7 @@ header { background: #1a1a18; color: #fff; padding: 12px 20px; display: flex; al
 /* TABS */
 .tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
 .tab { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 7px; padding: 7px 14px; font-size: 12px; cursor: pointer; color: #666; }
-.tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+.tab.active { background: linear-gradient(135deg, #8BC34A, #4CAF50); color: #ffffff; border-color: #4CAF50; font-weight: 600; box-shadow: 0 2px 6px rgba(76,175,80,0.3); }
 
 /* TABLA */
 .tbl-wrap { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; overflow-x: auto; margin-bottom: 14px; }
@@ -110,16 +110,16 @@ tr:hover td { background: #fafaf8; }
 
 /* BADGES */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; }
-.b-aero { background: #e3f2fd; color: #1565c0; }
-.b-viaje { background: #e8f5e9; color: #2e7d32; }
+.b-aero { background: #f0fff4; color: #2e7d32; border: 0.5px solid #a5d6a7; }
+.b-viaje { background: #f0fff4; color: #2e7d32; border: 0.5px solid #a5d6a7; }
 .b-espera { background: #fff3e0; color: #e65100; }
 .b-ralenti { background: #fce4ec; color: #c62828; }
-.b-normal { background: #f3f4f6; color: #555; }
+.b-normal { background: #f0f0ec; color: #3d3d3b; border: 0.5px solid #d8d8d4; }
 
 /* HISTORIAL */
 .hist-list { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; overflow: hidden; }
 .hist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 0.5px solid #f0f0e8; cursor: pointer; transition: background .15s; }
-.hist-item:hover { background: #fafaf8; }
+.hist-item:hover { background: #f0fff4; }
 .hist-item:last-child { border-bottom: none; }
 .hist-fecha { font-weight: 500; font-size: 13px; }
 .hist-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
@@ -130,7 +130,7 @@ tr:hover td { background: #fafaf8; }
 .factura-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
 .f-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid #f0f0e8; font-size: 12px; }
 .f-row:last-child { border-bottom: none; }
-.f-total { font-weight: 700; font-size: 14px; padding-top: 10px; margin-top: 6px; border-top: 1.5px solid #1a1a18; }
+.f-total { font-weight: 700; font-size: 14px; padding-top: 10px; margin-top: 6px; border-top: 1.5px solid #4CAF50; color: #3d3d3b; }
 
 /* EMPTY */
 .empty { text-align: center; padding: 50px 20px; color: #bbb; }
@@ -146,8 +146,8 @@ tr:hover td { background: #fafaf8; }
 .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
 .modal p { font-size: 13px; color: #555; margin-bottom: 18px; line-height: 1.5; }
 .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
-.btn-cancel { background: #f5f5f0; border: 0.5px solid #ddd; border-radius: 7px; padding: 9px 18px; font-size: 13px; cursor: pointer; }
-.btn-confirm { background: #1a1a18; color: #fff; border: none; border-radius: 7px; padding: 9px 18px; font-size: 13px; cursor: pointer; }
+.btn-cancel { background: #eef5f1; border: 0.5px solid #ddd; border-radius: 7px; padding: 9px 18px; font-size: 13px; cursor: pointer; }
+.btn-confirm { background: linear-gradient(135deg,#8BC34A,#4CAF50); color: #fff; border: none; border-radius: 7px; padding: 9px 18px; font-size: 13px; cursor: pointer; }
 
 /* USUARIOS FLOTA */
 .flota-config { background: #fff; border-radius: 10px; border: 0.5px solid #e0e0d8; padding: 18px; margin-bottom: 14px; }
@@ -155,7 +155,7 @@ tr:hover td { background: #fafaf8; }
 .veh-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .veh-row input { flex: 1; border: 0.5px solid #ddd; border-radius: 7px; padding: 7px 10px; font-size: 13px; }
 .btn-add-veh { background: transparent; border: 0.5px solid #ddd; border-radius: 7px; padding: 7px 14px; font-size: 12px; cursor: pointer; }
-.btn-save-flota { background: #1a1a18; color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; cursor: pointer; margin-top: 8px; }
+.btn-save-flota { background: linear-gradient(135deg,#8BC34A,#4CAF50); color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 12px; cursor: pointer; margin-top: 8px; }
 
 @media (max-width: 600px) {
   .main { padding: 10px; }
@@ -198,9 +198,9 @@ tr:hover td { background: #fafaf8; }
     <div class="tabs" style="margin-bottom:16px">
       <div class="tab active" onclick="showMain('dashboard',this)">Dashboard</div>
       <div class="tab" onclick="showMain('realtime',this)">⚡ Tiempo real</div>
-      <div class="tab" onclick="showMain('facturas',this)">💰 Facturas</div>
       <div class="tab" onclick="showMain('historial',this)">Historial</div>
       <div class="tab" onclick="showMain('configuracion',this)">Configuración</div>
+      <div class="tab" onclick="showMain('facturas',this)">💰 Facturas</div>
     </div>
 
     <!-- DASHBOARD -->
@@ -260,7 +260,7 @@ tr:hover td { background: #fafaf8; }
             <input type="password" id="apiPass" placeholder="Tu contraseña" style="width:100%;border:0.5px solid #ddd;border-radius:7px;padding:8px 12px;font-size:13px;box-sizing:border-box">
           </div>
         </div>
-        <button class="btn-analizar" onclick="conectarAPI()" style="background:#185fa5">Conectar y ver en tiempo real</button>
+        <button class="btn-analizar" onclick="conectarAPI()" style="background:linear-gradient(135deg,#8BC34A,#4CAF50);font-weight:600;box-shadow:0 2px 8px rgba(76,175,80,0.25)">Conectar y ver en tiempo real</button>
         <div id="apiStatus" style="font-size:12px;margin-top:8px"></div>
       </div>
 
@@ -276,7 +276,7 @@ tr:hover td { background: #fafaf8; }
           </div>
           <div style="display:flex;gap:8px">
             <button onclick="actualizarTiempoReal()" style="background:transparent;border:0.5px solid #ddd;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">Actualizar ahora</button>
-            <button onclick="toggleAutoUpdate()" id="btnAuto" style="background:#1a1a18;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">Auto: ON</button>
+            <button onclick="toggleAutoUpdate()" id="btnAuto" style="background:#3d3d3b;color:#ffffff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">Auto: ON</button>
             <button onclick="desconectarAPI()" style="background:transparent;border:0.5px solid #ddd;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:#c0392b">Desconectar</button>
           </div>
         </div>
@@ -293,13 +293,81 @@ tr:hover td { background: #fafaf8; }
           <p style="font-size:12px;color:#888;margin-bottom:12px">Consulta todos los viajes del día actual directamente desde la API de Protrack365, sin necesidad de descargar ningún archivo.</p>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <input type="date" id="fechaReporte" style="border:0.5px solid #ddd;border-radius:7px;padding:7px 12px;font-size:13px">
-            <button class="btn-analizar" onclick="generarReporteAPI()" style="background:linear-gradient(135deg,#8BC34A,#4CAF50);margin-top:0;font-weight:600">Generar reporte desde API</button>
+            <button class="btn-analizar" onclick="generarReporteAPI()" style="background:linear-gradient(135deg,#8BC34A,#4CAF50);margin-top:0;font-weight:600" style="background:linear-gradient(135deg,#8BC34A,#4CAF50);font-weight:600">Generar reporte desde API</button>
           </div>
           <div id="reporteAPIStatus" style="font-size:12px;margin-top:8px"></div>
         </div>
 
       </div>
     </div>
+
+    <!-- FACTURAS -->
+    <div id="main-facturas" style="display:none">
+
+      <!-- KPIs cobranza -->
+      <div class="kpi-grid" id="facturasKPI" style="margin-bottom:14px"></div>
+
+      <!-- Filtros período -->
+      <div style="background:#fff;border:0.5px solid #e0e8e0;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:#888;font-weight:500">Período:</span>
+        <button class="tab active" id="filtSemana" onclick="filtrarFacturas('semana',this)">Esta semana</button>
+        <button class="tab" id="filtMes" onclick="filtrarFacturas('mes',this)">Este mes</button>
+        <button class="tab" id="filtTodo" onclick="filtrarFacturas('todo',this)">Todo</button>
+        <select id="filtCliente" onchange="renderFacturasList()" style="margin-left:auto;border:0.5px solid #d8d8d4;border-radius:7px;padding:6px 10px;font-size:12px;color:#3d3d3b;background:#fff">
+          <option value="">Todos los clientes</option>
+        </select>
+      </div>
+
+      <!-- Subir XML -->
+      <div class="upload-section" style="margin-bottom:14px">
+        <h2 style="font-size:14px;font-weight:600;margin-bottom:8px">Registrar factura nueva</h2>
+        <p style="font-size:12px;color:#888;margin-bottom:12px">Sube el XML del SAT — los datos se extraen automáticamente y se guardan como <strong>Pendiente</strong>. Puedes actualizar el estado después.</p>
+        <input type="file" id="xmlInput" accept=".xml" style="display:none" onchange="leerXML(this)">
+        <button class="btn-analizar" onclick="document.getElementById('xmlInput').click()" style="margin-top:0">📄 Subir XML del SAT</button>
+
+        <!-- Preview -->
+        <div id="xmlPreview" style="display:none;margin-top:14px;background:#f8fdf8;border:0.5px solid #c8e6c9;border-radius:8px;padding:14px">
+          <h3 style="font-size:13px;font-weight:600;margin-bottom:10px;color:#2e7d32">✓ Datos extraídos del XML</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div style="background:#fff;border-radius:7px;padding:10px;border:0.5px solid #e0e8e0">
+              <div style="font-size:10px;color:#aaa;margin-bottom:3px">NÚMERO DE FACTURA</div>
+              <div id="preNumero" style="font-size:15px;font-weight:700;color:#3d3d3b"></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:10px;border:0.5px solid #e0e8e0">
+              <div style="font-size:10px;color:#aaa;margin-bottom:3px">MONTO TOTAL</div>
+              <div id="preTotal" style="font-size:15px;font-weight:700;color:#4CAF50"></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:10px;border:0.5px solid #e0e8e0">
+              <div style="font-size:10px;color:#aaa;margin-bottom:3px">CLIENTE</div>
+              <div id="preCliente" style="font-size:12px;color:#3d3d3b;font-weight:500"></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:10px;border:0.5px solid #e0e8e0">
+              <div style="font-size:10px;color:#aaa;margin-bottom:3px">FECHA EMISIÓN</div>
+              <div id="preFecha" style="font-size:12px;color:#3d3d3b"></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:10px;border:0.5px solid #e0e8e0">
+              <div style="font-size:10px;color:#aaa;margin-bottom:3px">RFC</div>
+              <div id="preRFC" style="font-size:11px;color:#3d3d3b;font-family:monospace"></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:10px;border:0.5px solid #e0e8e0">
+              <div style="font-size:10px;color:#aaa;margin-bottom:3px">SUBTOTAL / IVA</div>
+              <div id="preSubIva" style="font-size:11px;color:#3d3d3b"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:#aaa;margin-bottom:3px">UUID FISCAL</div>
+          <div id="preUUID" style="font-size:10px;font-family:monospace;color:#999;margin-bottom:12px;word-break:break-all"></div>
+          <button class="btn-analizar" onclick="guardarFactura()" style="margin-top:0;width:100%">Guardar como Pendiente</button>
+          <div id="xmlMsg" style="font-size:12px;margin-top:8px"></div>
+        </div>
+      </div>
+
+      <!-- Lista de facturas -->
+      <div id="facturasList">
+        <div class="empty"><div class="ico">🧾</div><p>No hay facturas registradas aún.<br>Sube el XML del SAT para comenzar.</p></div>
+      </div>
+
+    </div>
+
     <div id="main-historial" style="display:none">
       <h2 style="font-size:14px;font-weight:600;margin-bottom:14px">Reportes guardados</h2>
       <div id="historialLista"><div class="loading">Cargando historial...</div></div>
@@ -1101,7 +1169,7 @@ function renderVehicleCards(vehiculos) {
         <div style="font-size:11px;color:#888;margin-bottom:4px">Motor: <strong style="color:${motorOn?'#4CAF50':'#c0392b'}">${motorOn?'Encendido':'Apagado'}</strong>${motorOn && minutosMotor > 0 ? ' <span style="color:#e67e22;font-size:10px">('+minutosMotor+' min encendido)</span>' : ''}</div>
         <div style="font-size:11px;color:#888;margin-bottom:4px">Posición: ${v.latitude.toFixed(5)}, ${v.longitude.toFixed(5)}</div>
         <div style="font-size:11px;color:#888">GPS actualizado: ${tGPS}</div>
-        <a href="https://maps.google.com/?q=${v.latitude},${v.longitude}" target="_blank" style="display:block;margin-top:10px;text-align:center;background:#1a1a18;color:#fff;border-radius:7px;padding:6px;font-size:12px;text-decoration:none">Ver en mapa</a>
+        <a href="https://maps.google.com/?q=${v.latitude},${v.longitude}" target="_blank" style="display:block;margin-top:10px;text-align:center;background:#f0f0ec;color:#3d3d3b;border:0.5px solid #d8d8d4;border-radius:7px;padding:8px;font-size:12px;text-decoration:none;font-weight:500">Ver en mapa</a>
       </div>
     </div>`;
   });
