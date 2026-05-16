@@ -598,12 +598,12 @@ function analizar(datos) {
   const res = { vehiculo:datos.vehiculo, fechaReporte:datos.fechaReporte,
     viajesDesdeAeropuerto:[], esperasEnAeropuerto:[], ralenties:[], todosMovimientos:[] };
 
-  datos.movimientos.forEach(m => {
+  // Primera pasada: clasificar todos los movimientos
+  const movs = datos.movimientos.map(m => {
     const oC = m.origenCoords, dC = m.destCoords;
     const oEnA = oC && haversine(oC.lat,oC.lon,cfg.lat,cfg.lon)<=cfg.radio;
     const dEnA = dC && haversine(dC.lat,dC.lon,cfg.lat,cfg.lon)<=cfg.radio;
     let tipo='normal', zonaDestino='';
-
     if (m.estado==='Conducción') {
       if (oEnA) { tipo='viaje-aeropuerto'; zonaDestino=dC?detectarZona(dC.lat,dC.lon):'Desconocido'; }
       else if (dEnA) { tipo='regreso-aeropuerto'; zonaDestino='Aeropuerto CUN'; }
@@ -611,13 +611,36 @@ function analizar(datos) {
       if (oEnA) tipo = m.duracionSeg>=cfg.ralenti*60?'espera-aeropuerto-larga':'espera-aeropuerto';
       else if (m.duracionSeg>=cfg.ralenti*60) tipo='ralenti';
     }
-
-    const mov={...m,tipo,zonaDestino};
-    res.todosMovimientos.push(mov);
-    if (tipo==='viaje-aeropuerto') res.viajesDesdeAeropuerto.push(mov);
-    if (tipo.includes('espera-aeropuerto')) res.esperasEnAeropuerto.push(mov);
-    if (tipo==='ralenti') res.ralenties.push(mov);
+    return {...m, tipo, zonaDestino, esperaPreviaSeg: 0, llegadaAero: null};
   });
+
+  // Segunda pasada: vincular espera previa a cada viaje desde aeropuerto
+  movs.forEach((m, idx) => {
+    if (m.tipo === 'viaje-aeropuerto') {
+      let esperaTotalSeg = 0;
+      let llegadaAero = null;
+      let i = idx - 1;
+      while (i >= 0) {
+        const prev = movs[i];
+        if (prev.tipo.includes('espera-aeropuerto')) {
+          esperaTotalSeg += prev.duracionSeg;
+          llegadaAero = prev.inicio;
+          i--;
+        } else { break; }
+      }
+      m.esperaPreviaSeg = esperaTotalSeg;
+      m.llegadaAero = llegadaAero;
+    }
+  });
+
+  // Tercera pasada: agregar a los arrays de resultado
+  movs.forEach(m => {
+    res.todosMovimientos.push(m);
+    if (m.tipo==='viaje-aeropuerto') res.viajesDesdeAeropuerto.push(m);
+    if (m.tipo.includes('espera-aeropuerto')) res.esperasEnAeropuerto.push(m);
+    if (m.tipo==='ralenti') res.ralenties.push(m);
+  });
+
   return res;
 }
 
@@ -747,8 +770,57 @@ function hora(iso) { return iso ? new Date(iso).toLocaleTimeString('es-MX',{hour
 function renderTabViajes(resultados) {
   const viajes = resultados.flatMap(r=>r.viajesDesdeAeropuerto);
   if (!viajes.length) { document.getElementById('tab-viajes').innerHTML=`<div class="empty"><div class="ico">🛫</div><p>No se detectaron viajes desde el aeropuerto.<br>Verifica el radio de geocerca en Configuración.</p></div>`; return; }
-  document.getElementById('tab-viajes').innerHTML = `<table><thead><tr><th>#</th><th>Vehículo</th><th>Salida</th><th>Llegada</th><th>Duración</th><th>Km</th><th>Zona destino</th></tr></thead><tbody>${
-    viajes.map((m,i)=>`<tr><td>${i+1}</td><td>${m.vehiculo}</td><td>${hora(m.inicio)}</td><td>${hora(m.fin)}</td><td>${m.duracionStr}</td><td>${m.km.toFixed(2)}</td><td><span class="badge b-aero">${m.zonaDestino}</span></td></tr>`).join('')
+
+  // Calcular promedio de espera
+  const viajesConEspera = viajes.filter(m => m.esperaPreviaSeg > 0);
+  const promedioEspera = viajesConEspera.length > 0
+    ? Math.round(viajesConEspera.reduce((s,m) => s + m.esperaPreviaSeg, 0) / viajesConEspera.length / 60)
+    : 0;
+  const maxEspera = viajesConEspera.length > 0
+    ? Math.round(Math.max(...viajesConEspera.map(m => m.esperaPreviaSeg)) / 60)
+    : 0;
+
+  const resumen = viajesConEspera.length > 0 ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+      <div style="background:#f8f9fa;border-radius:8px;padding:10px;text-align:center;border:0.5px solid #e0e0d8">
+        <div style="font-size:20px;font-weight:700;color:#3d3d3b">${viajes.length}</div>
+        <div style="font-size:10px;color:#aaa">viajes del día</div>
+      </div>
+      <div style="background:#f8f9fa;border-radius:8px;padding:10px;text-align:center;border:0.5px solid #e0e0d8">
+        <div style="font-size:20px;font-weight:700;color:#e67e22">${promedioEspera} min</div>
+        <div style="font-size:10px;color:#aaa">espera promedio</div>
+      </div>
+      <div style="background:#f8f9fa;border-radius:8px;padding:10px;text-align:center;border:0.5px solid #e0e0d8">
+        <div style="font-size:20px;font-weight:700;color:#c0392b">${maxEspera} min</div>
+        <div style="font-size:10px;color:#aaa">espera máxima</div>
+      </div>
+    </div>` : '';
+
+  document.getElementById('tab-viajes').innerHTML = resumen + `<table><thead><tr>
+    <th>#</th><th>Vehículo</th><th>Llegada a aeropuerto</th><th>⏱ Espera en cola</th><th>Inicio viaje</th><th>Llegada a destino</th><th>Duración viaje</th><th>Km</th><th>Zona destino</th>
+  </tr></thead><tbody>${
+    viajes.map((m,i) => {
+      const tieneEspera = m.esperaPreviaSeg > 0;
+      const minEspera = Math.round(m.esperaPreviaSeg / 60);
+      const colorEspera = m.esperaPreviaSeg > 2700 ? '#c0392b' : m.esperaPreviaSeg > 1200 ? '#e67e22' : '#4CAF50';
+      const esperaStr = tieneEspera
+        ? `<strong style="color:${colorEspera}">${formatDur(m.esperaPreviaSeg)}</strong>`
+        : '<span style="color:#aaa">—</span>';
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${m.vehiculo}</td>
+        <td style="font-size:11px;color:#888">${m.llegadaAero ? hora(m.llegadaAero) : '—'}</td>
+        <td>${esperaStr}</td>
+        <td>${hora(m.inicio)}</td>
+        <td>${hora(m.fin)}</td>
+        <td>${m.duracionStr}</td>
+        <td>${m.km.toFixed(2)}</td>
+        <td>
+          <span class="badge b-aero">${m.zonaDestino}</span>
+          ${m.destDir ? `<div style="font-size:10px;color:#aaa;margin-top:3px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m.destDir}">${m.destDir.substring(0,45)}${m.destDir.length>45?'...':''}</div>` : ''}
+        </td>
+      </tr>`;
+    }).join('')
   }</tbody></table>`;
 }
 
@@ -865,8 +937,12 @@ window.showMain = function(name, el) {
 };
 
 window.showTab = function(name, el) {
-  ['viajes','espera','ralenti','todos','factura'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
-  document.getElementById('tab-'+name).style.display='block';
+  ['viajes','espera','ralenti','todos','factura','comportamiento'].forEach(t=>{
+    const el2 = document.getElementById('tab-'+t);
+    if(el2) el2.style.display='none';
+  });
+  const target = document.getElementById('tab-'+name);
+  if(target) target.style.display='block';
   document.querySelectorAll('#tabsAnalisis .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
 };
