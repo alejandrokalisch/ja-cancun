@@ -198,6 +198,7 @@ tr:hover td { background: #fafaf8; }
     <div class="tabs" style="margin-bottom:16px">
       <div class="tab active" onclick="showMain('dashboard',this)">Dashboard</div>
       <div class="tab" onclick="showMain('realtime',this)">⚡ Tiempo real</div>
+      <div class="tab" onclick="showMain('facturas',this)">💰 Facturas</div>
       <div class="tab" onclick="showMain('historial',this)">Historial</div>
       <div class="tab" onclick="showMain('configuracion',this)">Configuración</div>
     </div>
@@ -371,7 +372,7 @@ tr:hover td { background: #fafaf8; }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, orderBy, query, limit } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, deleteDoc, orderBy, query, limit } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCfR6r0qmGpNRhatK10AiaZ8L5RLXgckE4",
@@ -925,7 +926,7 @@ window.verReporte = async function(id) {
 
 // ─── NAVEGACIÓN ──────────────────────────────────────────────────────────────
 window.showMain = function(name, el) {
-  ['dashboard','realtime','historial','configuracion'].forEach(n => {
+  ['dashboard','realtime','facturas','historial','configuracion'].forEach(n => {
     const el2 = document.getElementById('main-'+n);
     if(el2) el2.style.display='none';
   });
@@ -934,6 +935,7 @@ window.showMain = function(name, el) {
   document.querySelectorAll('.tabs:first-of-type .tab').forEach(t=>t.classList.remove('active'));
   if(el) el.classList.add('active');
   if(name==='historial') cargarHistorial();
+  if(name==='facturas') cargarFacturas();
 };
 
 window.showTab = function(name, el) {
@@ -1158,6 +1160,247 @@ window.generarReporteAPI = async function() {
 };
 
 // ─── FIN MÓDULO API ──────────────────────────────────────────────────────────
+
+// ─── MÓDULO DE FACTURAS ──────────────────────────────────────────────────────
+let facturasPeriodo = 'semana';
+let facturasPendientes = [];
+let xmlDatosActuales = null;
+
+window.filtrarFacturas = function(periodo, el) {
+  facturasPeriodo = periodo;
+  document.querySelectorAll('#main-facturas .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderFacturasList();
+};
+
+window.leerXML = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(e.target.result, 'text/xml');
+
+      // Namespaces SAT CFDI 3.3 y 4.0
+      const cfdi = xml.querySelector('Comprobante') ||
+                   xml.getElementsByTagNameNS('*', 'Comprobante')[0];
+      const receptor = xml.querySelector('Receptor') ||
+                       xml.getElementsByTagNameNS('*', 'Receptor')[0];
+      const timbre = xml.querySelector('TimbreFiscalDigital') ||
+                     xml.getElementsByTagNameNS('*', 'TimbreFiscalDigital')[0];
+      const traslados = xml.querySelectorAll('Traslado') ||
+                        xml.getElementsByTagNameNS('*', 'Traslado');
+
+      if (!cfdi) throw new Error('No es un XML de factura SAT válido');
+
+      // Extraer IVA
+      let iva = 0;
+      traslados.forEach(t => {
+        const imp = parseFloat(t.getAttribute('Importe') || t.getAttribute('importe') || 0);
+        iva += imp;
+      });
+
+      const total = parseFloat(cfdi.getAttribute('Total') || cfdi.getAttribute('total') || 0);
+      const subtotal = parseFloat(cfdi.getAttribute('SubTotal') || cfdi.getAttribute('subtotal') || 0);
+      const fecha = cfdi.getAttribute('Fecha') || cfdi.getAttribute('fecha') || '';
+      const serie = cfdi.getAttribute('Serie') || '';
+      const folio = cfdi.getAttribute('Folio') || cfdi.getAttribute('folio') || '';
+      const uuid = timbre ? (timbre.getAttribute('UUID') || timbre.getAttribute('uuid') || '') : '';
+      const nombreReceptor = receptor ? (receptor.getAttribute('Nombre') || receptor.getAttribute('nombre') || '') : '';
+      const rfcReceptor = receptor ? (receptor.getAttribute('Rfc') || receptor.getAttribute('RFC') || '') : '';
+
+      xmlDatosActuales = { uuid, numero: `${serie}${folio}`, cliente: nombreReceptor,
+        rfc: rfcReceptor, fecha: fecha.split('T')[0], total, subtotal, iva };
+
+      // Mostrar preview
+      document.getElementById('preNumero').textContent = `${serie}${folio}` || '—';
+      document.getElementById('preTotal').textContent = `$${total.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+      document.getElementById('preCliente').textContent = nombreReceptor || '—';
+      document.getElementById('preFecha').textContent = fecha.split('T')[0] || '—';
+      document.getElementById('preRFC').textContent = rfcReceptor || '—';
+      document.getElementById('preSubIva').textContent = `$${subtotal.toLocaleString('es-MX',{minimumFractionDigits:2})} / IVA $${iva.toLocaleString('es-MX',{minimumFractionDigits:2})}`;
+      document.getElementById('preUUID').textContent = uuid || '—';
+      document.getElementById('xmlPreview').style.display = 'block';
+      document.getElementById('xmlMsg').textContent = '';
+      input.value = '';
+    } catch(err) {
+      alert('Error al leer el XML: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+};
+
+window.guardarFactura = async function() {
+  if (!xmlDatosActuales) return;
+  const msgEl = document.getElementById('xmlMsg');
+  msgEl.innerHTML = '<span style="color:#888">Guardando...</span>';
+  try {
+    const factura = {
+      ...xmlDatosActuales,
+      estado: 'pendiente',
+      abono: 0,
+      notas: '',
+      creadoEn: new Date().toISOString(),
+    };
+    await addDoc(collection(db, 'facturas'), factura);
+
+    // Actualizar selector de clientes
+    actualizarSelectClientes();
+    renderFacturasList();
+    renderFacturasKPI();
+
+    xmlDatosActuales = null;
+    document.getElementById('xmlPreview').style.display = 'none';
+    msgEl.innerHTML = '<span style="color:#4CAF50">✓ Factura guardada como Pendiente</span>';
+    setTimeout(() => { msgEl.textContent = ''; }, 3000);
+  } catch(e) {
+    msgEl.innerHTML = `<span style="color:#c0392b">Error: ${e.message}</span>`;
+  }
+};
+
+window.cambiarEstado = async function(id, nuevoEstado) {
+  try {
+    await setDoc(doc(db, 'facturas', id), { estado: nuevoEstado }, { merge: true });
+    renderFacturasList();
+    renderFacturasKPI();
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+window.agregarAbono = async function(id) {
+  const monto = prompt('¿Cuánto abonó el cliente? $');
+  if (!monto || isNaN(parseFloat(monto))) return;
+  try {
+    const snap = await getDoc(doc(db, 'facturas', id));
+    const data = snap.data();
+    const nuevoAbono = (data.abono || 0) + parseFloat(monto);
+    const nuevoEstado = nuevoAbono >= data.total ? 'cobrado' : 'abono';
+    await setDoc(doc(db, 'facturas', id), { abono: nuevoAbono, estado: nuevoEstado }, { merge: true });
+    renderFacturasList();
+    renderFacturasKPI();
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+window.eliminarFactura = async function(id) {
+  if (!confirm('¿Eliminar esta factura del sistema?')) return;
+  try {
+    await deleteDoc(doc(db, 'facturas', id));
+    renderFacturasList();
+    renderFacturasKPI();
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+function fechaEnPeriodo(fechaStr) {
+  const fecha = new Date(fechaStr + 'T00:00:00');
+  const hoy = new Date();
+  if (facturasPeriodo === 'semana') {
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - hoy.getDay() + 1);
+    lunes.setHours(0,0,0,0);
+    return fecha >= lunes;
+  } else if (facturasPeriodo === 'mes') {
+    return fecha.getMonth() === hoy.getMonth() && fecha.getFullYear() === hoy.getFullYear();
+  }
+  return true; // 'todo'
+}
+
+async function cargarFacturas() {
+  try {
+    const q = query(collection(db, 'facturas'), orderBy('creadoEn', 'desc'));
+    const snap = await getDocs(q);
+    facturasPendientes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    actualizarSelectClientes();
+    renderFacturasKPI();
+    renderFacturasList();
+  } catch(e) { console.error('Error cargando facturas:', e); }
+}
+
+function actualizarSelectClientes() {
+  const sel = document.getElementById('filtCliente');
+  if (!sel) return;
+  const clientes = [...new Set(facturasPendientes.map(f => f.cliente).filter(Boolean))];
+  sel.innerHTML = '<option value="">Todos los clientes</option>' +
+    clientes.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function renderFacturasKPI() {
+  const filtCliente = document.getElementById('filtCliente')?.value || '';
+  const facturas = facturasPendientes.filter(f =>
+    fechaEnPeriodo(f.fecha) && (!filtCliente || f.cliente === filtCliente)
+  );
+
+  const cobradas = facturas.filter(f => f.estado === 'cobrado');
+  const pendientes = facturas.filter(f => f.estado === 'pendiente');
+  const vencidas = facturas.filter(f => f.estado === 'vencido');
+  const abonos = facturas.filter(f => f.estado === 'abono');
+
+  const sumCobrado = cobradas.reduce((s,f) => s + (f.total||0), 0);
+  const sumPendiente = pendientes.reduce((s,f) => s + (f.total||0), 0);
+  const sumVencido = vencidas.reduce((s,f) => s + (f.total||0), 0);
+  const sumAbono = abonos.reduce((s,f) => s + (f.abono||0), 0);
+
+  const fmt = n => `$${n.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+
+  document.getElementById('facturasKPI').innerHTML = `
+    <div class="kpi ok"><div class="lbl">Cobrado</div><div class="val">${fmt(sumCobrado)}</div><div class="sub">${cobradas.length} factura(s)</div></div>
+    <div class="kpi warn"><div class="lbl">Pendiente</div><div class="val">${fmt(sumPendiente)}</div><div class="sub">${pendientes.length} factura(s)</div></div>
+    <div class="kpi bad"><div class="lbl">Vencido</div><div class="val">${fmt(sumVencido)}</div><div class="sub">${vencidas.length} factura(s)</div></div>
+    <div class="kpi neu"><div class="lbl">Abonos recibidos</div><div class="val">${fmt(sumAbono)}</div><div class="sub">${abonos.length} factura(s)</div></div>
+  `;
+}
+
+window.renderFacturasList = function() {
+  renderFacturasKPI();
+  const filtCliente = document.getElementById('filtCliente')?.value || '';
+  const facturas = facturasPendientes.filter(f =>
+    fechaEnPeriodo(f.fecha) && (!filtCliente || f.cliente === filtCliente)
+  );
+
+  const cont = document.getElementById('facturasList');
+  if (!facturas.length) {
+    cont.innerHTML = '<div class="empty"><div class="ico">🧾</div><p>No hay facturas en este período.</p></div>';
+    return;
+  }
+
+  const estadoBadge = {
+    pendiente: '<span class="estado-pendiente">⏳ Pendiente</span>',
+    cobrado:   '<span class="estado-cobrado">✅ Cobrada</span>',
+    vencido:   '<span class="estado-vencido">🔴 Vencida</span>',
+    abono:     '<span class="estado-abono">💰 Abono parcial</span>',
+    cancelado: '<span class="estado-cancelado">❌ Cancelada</span>',
+  };
+
+  cont.innerHTML = facturas.map(f => `
+    <div class="factura-card">
+      <div class="factura-card-header">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#3d3d3b">${f.cliente || '—'}</div>
+          <div style="font-size:11px;color:#aaa">${f.numero || ''} · ${f.fecha || ''} · RFC: ${f.rfc || '—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="factura-monto" style="color:${f.estado==='cobrado'?'#4CAF50':f.estado==='vencido'?'#c0392b':'#3d3d3b'}">
+            $${(f.total||0).toLocaleString('es-MX',{minimumFractionDigits:2})}
+          </div>
+          <div style="margin-top:4px">${estadoBadge[f.estado] || estadoBadge.pendiente}</div>
+        </div>
+      </div>
+      <div class="factura-card-body">
+        ${f.estado === 'abono' ? `<div style="font-size:12px;color:#6a1b9a;margin-bottom:8px">Abonado: $${(f.abono||0).toLocaleString('es-MX',{minimumFractionDigits:2})} · Pendiente: $${((f.total||0)-(f.abono||0)).toLocaleString('es-MX',{minimumFractionDigits:2})}</div>` : ''}
+        ${f.notas ? `<div style="font-size:11px;color:#888;margin-bottom:8px;font-style:italic">${f.notas}</div>` : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+          ${f.estado !== 'cobrado' ? `<button class="btn-estado" onclick="cambiarEstado('${f.id}','cobrado')">✅ Marcar cobrada</button>` : ''}
+          ${f.estado !== 'vencido' ? `<button class="btn-estado" onclick="cambiarEstado('${f.id}','vencido')">🔴 Marcar vencida</button>` : ''}
+          ${f.estado !== 'cancelado' ? `<button class="btn-estado" onclick="cambiarEstado('${f.id}','cancelado')">❌ Cancelar</button>` : ''}
+          <button class="btn-estado" onclick="agregarAbono('${f.id}')">💰 Registrar abono</button>
+          ${f.estado === 'pendiente' ? `<button class="btn-estado" onclick="cambiarEstado('${f.id}','pendiente')">↩️ Revertir</button>` : ''}
+        </div>
+        <div style="font-size:10px;color:#ccc">UUID: ${f.uuid || '—'}</div>
+      </div>
+    </div>
+  `).join('');
+};
+// ─── FIN MÓDULO FACTURAS ─────────────────────────────────────────────────────
+
 
 // Enter en login
 document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') window.doLogin(); });
